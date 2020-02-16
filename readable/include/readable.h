@@ -1,0 +1,1 @@
+int readable(char *inputPath);
