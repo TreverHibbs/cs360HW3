@@ -2,10 +2,10 @@
 #include <errno.h>
 #include <string.h>
 #include <stdio.h>
-#include <stdbool.h>
 #include <sys/types.h>
 #include <dirent.h>
 #include <stdlib.h>
+#include <linux/limits.h>
 
 void deleteBuffers(int length, char **buffers){
     int i = 0;
@@ -16,15 +16,18 @@ void deleteBuffers(int length, char **buffers){
     return;
 }
 
+
+
 int readable(char *input_path){
     int length_of_buffer_array = 0;
     char **buffer_array = calloc(10, sizeof(char**));
-    bool executable_flag = 1;
+    int executable_flag = 1;
     int readable_files = 0;
     DIR* dirp = NULL;
 
     if(input_path == NULL){
-        input_path = get_current_dir_name();
+        input_path = malloc(sizeof(PATH_MAX));
+        input_path = getcwd(input_path, PATH_MAX);
         if(input_path == NULL){
             fprintf (stderr, "%s: Can't access PWD variable for path --%s --errno=%d\n"
                      ,"readable" , strerror(errno), errno);
