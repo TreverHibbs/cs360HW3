@@ -43,14 +43,18 @@ int readable(char *input_path){
         //return number of readable files.
     executable_flag = access(input_path, X_OK);
     if(executable_flag < 0){
-        fprintf (stderr, "%s: Can't access execute directory named %s --%s --errno=%d\n"
+        fprintf (stderr, "%s: Can't access directory named %s --%s --errno=%d\n"
                  ,"readable" , input_path, strerror(errno), errno);
+        deleteBuffers(length_of_buffer_array, buffer_array);
+        free(buffer_array);
         return(readable_files);
     }else{
         dirp = opendir(input_path);
         if(dirp == NULL){
             fprintf (stderr, "%s: Can't open directory named %s --%s --errno=%d\n"
                      ,"readable" , input_path, strerror(errno), errno);
+            deleteBuffers(length_of_buffer_array, buffer_array);
+            free(buffer_array);
             return(readable_files);
         }
     }
@@ -67,6 +71,7 @@ int readable(char *input_path){
             //return readable counter.
 
     
-
+    free(buffer_array);
+    deleteBuffers(length_of_buffer_array, buffer_array);
     return(1);
 }
