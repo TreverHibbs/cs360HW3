@@ -26,7 +26,12 @@ int readable(char *input_path){
     DIR* dirp = NULL;
 
     if(input_path == NULL){
-        input_path = malloc(sizeof(PATH_MAX));
+        input_path = (char *) malloc(sizeof(PATH_MAX));
+        if(input_path == NULL){
+            fprintf (stderr, "%s: Can't allocate memory --%s --errno=%d\n"
+                     ,"readable" , strerror(errno), errno);
+            return(-1);
+        }
         input_path = getcwd(input_path, PATH_MAX);
         if(input_path == NULL){
             fprintf (stderr, "%s: Can't access PWD variable for path --%s --errno=%d\n"
