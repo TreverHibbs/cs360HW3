@@ -45,6 +45,7 @@ int readable(char *input_path){
     errno = 0;
     char *file_path = NULL;
     char *new_file_path = NULL;
+    struct stat* stat_buf = NULL;
 
     if(input_path == NULL){
         input_path = malloc(PATH_MAX);
@@ -66,15 +67,16 @@ int readable(char *input_path){
         buffer_array[length_of_buffer_array++] = input_path;
     }
 
-    //try to open the given directory name
-    //if you can open it
-        //save the fd
-    //else if you cant open it 
-        //return number of readable files.
     printf("input_path is %s\n", input_path);
 
-    access_return = access(input_path, X_OK);
-    if(access_return < 0){
+    if(access_return = access(input_path, R_OK), 
+                 my_dirent = readdir(dirp), 
+                 my_dirent->d_type == DT_REG && access_return == 0
+                 && strcmp(my_dirent->d_name, "..") != 0
+                 && strcmp(my_dirent->d_name, ".") != 0){
+            
+            
+    }else if(access_return = access(input_path, X_OK), access_return < 0){
         fprintf (stderr, "%s: Can't access directory named %s --%s --errno=%d\n"
                  ,"readable" , input_path, strerror(errno), errno);
         deleteBuffers(length_of_buffer_array, buffer_array);
@@ -91,8 +93,7 @@ int readable(char *input_path){
         }
     }
 
-    while(my_dirent = readdir(dirp), my_dirent != NULL){
-        //check get the access permissions on the current file.
+    while(my_dirent != NULL){
         printf("my_dirent->d_name is %s\n", my_dirent->d_name);
         new_file_path = malloc(PATH_MAX);
 
