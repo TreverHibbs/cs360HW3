@@ -8,23 +8,39 @@
 #include <linux/limits.h>
 #include <dirent.h>
 
+int readable(char *inputPath);
+void deleteBuffers(int length, char **buffers);
+void closeAndFreeDirp(DIR *dirp);
+
 void deleteBuffers(int length, char **buffers){
     int i = 0;
     while(i < length){
         free(buffers[i]);
         i++;
     }
+
+    free(buffers);
     return;
 }
 
+void closeAndFreeDirp(DIR *dirp){
+    int out = 0;
 
+    out = closedir(dirp);
+    if(out < 0){
+        fprintf (stderr, "%s: Can't close dirp --%s --errno=%d\n"
+                 ,"readable" , strerror(errno), errno);
+    }
+
+    return;
+}
 
 int readable(char *input_path){
     int length_of_buffer_array = 0;
     char **buffer_array = calloc(10, sizeof(char**));
     int access_return = 1;
     int readable_files = 0;
-    DIR *dirp = malloc(sizeof(DIR*));
+    DIR *dirp = NULL;
     struct dirent *my_dirent = NULL;
     errno = 0;
     char *file_path = NULL;
@@ -35,12 +51,16 @@ int readable(char *input_path){
         if(input_path == NULL){
             fprintf (stderr, "%s: Can't allocate memory --%s --errno=%d\n"
                      ,"readable" , strerror(errno), errno);
+            deleteBuffers(length_of_buffer_array, buffer_array);
+            closeAndFreeDirp(dirp);
             return(-1);
         }
         input_path = getcwd(input_path, PATH_MAX);
         if(input_path == NULL){
             fprintf (stderr, "%s: Can't access PWD variable for path --%s --errno=%d\n"
                      ,"readable" , strerror(errno), errno);
+            deleteBuffers(length_of_buffer_array, buffer_array);
+            closeAndFreeDirp(dirp);
             return(-1);
         }
         buffer_array[length_of_buffer_array++] = input_path;
@@ -58,7 +78,7 @@ int readable(char *input_path){
         fprintf (stderr, "%s: Can't access directory named %s --%s --errno=%d\n"
                  ,"readable" , input_path, strerror(errno), errno);
         deleteBuffers(length_of_buffer_array, buffer_array);
-        free(buffer_array);
+        closeAndFreeDirp(dirp);
         return(readable_files);
     }else{
         dirp = opendir(input_path);
@@ -66,7 +86,7 @@ int readable(char *input_path){
             fprintf (stderr, "%s: Can't open directory named %s --%s --errno=%d\n"
                      ,"readable" , input_path, strerror(errno), errno);
             deleteBuffers(length_of_buffer_array, buffer_array);
-            free(buffer_array);
+            closeAndFreeDirp(dirp);
             return(readable_files);
         }
     }
@@ -103,23 +123,11 @@ int readable(char *input_path){
                  ,"readable", strerror(errno), errno);
 
         deleteBuffers(length_of_buffer_array, buffer_array);
-        free(buffer_array);
-        closedir(dirp);
+        closeAndFreeDirp(dirp);
         return(readable_files);
     }
-    //iterate over the fd pointer
-        //if a file is regular
-            //if it is readable
-                //increment readable counter
-        //else if the files is a dir
-            //recursively call the function on directory
-        //else if file is symbolic link
-            //ignore it
-        //else if EOF is reached
-            //return readable counter.
 
     deleteBuffers(length_of_buffer_array, buffer_array);
-    free(buffer_array);
-    closedir(dirp);
+    closeAndFreeDirp(dirp);
     return(readable_files);
 }

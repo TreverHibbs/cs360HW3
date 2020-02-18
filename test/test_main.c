@@ -2,6 +2,7 @@
 #include<string.h>
 #include<readable.h>
 
+int readable(char *inputPath);
 
 int main(int argc, char **argv){
     int out = 0;
