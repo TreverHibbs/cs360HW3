@@ -6,6 +6,7 @@
 #include <dirent.h>
 #include <stdlib.h>
 #include <linux/limits.h>
+#include <dirent.h>
 
 void deleteBuffers(int length, char **buffers){
     int i = 0;
@@ -21,12 +22,16 @@ void deleteBuffers(int length, char **buffers){
 int readable(char *input_path){
     int length_of_buffer_array = 0;
     char **buffer_array = calloc(10, sizeof(char**));
-    int executable_flag = 1;
+    int access_return = 1;
     int readable_files = 0;
-    DIR* dirp = NULL;
+    DIR *dirp = malloc(sizeof(DIR*));
+    struct dirent *my_dirent = NULL;
+    errno = 0;
+    char *file_path = NULL;
+    char *new_file_path = NULL;
 
     if(input_path == NULL){
-        input_path = (char *) malloc(sizeof(PATH_MAX));
+        input_path = malloc(PATH_MAX);
         if(input_path == NULL){
             fprintf (stderr, "%s: Can't allocate memory --%s --errno=%d\n"
                      ,"readable" , strerror(errno), errno);
@@ -46,8 +51,10 @@ int readable(char *input_path){
         //save the fd
     //else if you cant open it 
         //return number of readable files.
-    executable_flag = access(input_path, X_OK);
-    if(executable_flag < 0){
+    printf("input_path is %s\n", input_path);
+
+    access_return = access(input_path, X_OK);
+    if(access_return < 0){
         fprintf (stderr, "%s: Can't access directory named %s --%s --errno=%d\n"
                  ,"readable" , input_path, strerror(errno), errno);
         deleteBuffers(length_of_buffer_array, buffer_array);
@@ -64,6 +71,42 @@ int readable(char *input_path){
         }
     }
 
+    while(my_dirent = readdir(dirp), my_dirent != NULL){
+        //check get the access permissions on the current file.
+        printf("my_dirent->d_name is %s\n", my_dirent->d_name);
+        new_file_path = malloc(PATH_MAX);
+
+        file_path = malloc(PATH_MAX);
+        strcpy(file_path, input_path);
+        strcat(file_path, "/");
+        strcat(file_path, my_dirent->d_name);
+        access_return = access(file_path, R_OK);
+
+        if(my_dirent->d_type == DT_REG && access_return == 0){
+            readable_files++;
+        }else if(my_dirent->d_type == DT_DIR 
+                 && strcmp(my_dirent->d_name, "..") != 0
+                 && strcmp(my_dirent->d_name, ".") != 0){
+            
+            strcpy(new_file_path, file_path);
+            readable_files = readable_files + readable(new_file_path);
+        }
+
+        free(file_path);
+        free(new_file_path);
+        file_path = NULL;
+    }
+
+    //check if readdir errored
+    if(errno != 0){
+        fprintf (stderr, "%s: Can't read dirp --%s --errno=%d\n"
+                 ,"readable", strerror(errno), errno);
+
+        deleteBuffers(length_of_buffer_array, buffer_array);
+        free(buffer_array);
+        closedir(dirp);
+        return(readable_files);
+    }
     //iterate over the fd pointer
         //if a file is regular
             //if it is readable
@@ -75,8 +118,8 @@ int readable(char *input_path){
         //else if EOF is reached
             //return readable counter.
 
-    
-    free(buffer_array);
     deleteBuffers(length_of_buffer_array, buffer_array);
-    return(1);
+    free(buffer_array);
+    closedir(dirp);
+    return(readable_files);
 }

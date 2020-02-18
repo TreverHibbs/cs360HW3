@@ -25,6 +25,12 @@ then
     gdb ./test_main
 fi
 
+if [ $1 = "run-no-path" ]
+then
+    input_flag=1
+    ./test_main $2
+fi
+
 if [ $1 = "help" ]
 then 
     input_flag=1
