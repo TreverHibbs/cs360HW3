@@ -7,12 +7,13 @@
 #include <stdlib.h>
 #include <linux/limits.h>
 #include <dirent.h>
+#include <sys/stat.h>
 
 int readable(char *inputPath);
-void deleteBuffers(int length, char **buffers);
+void deleteBuffers(int length, void **buffers);
 void closeAndFreeDirp(DIR *dirp);
 
-void deleteBuffers(int length, char **buffers){
+void deleteBuffers(int length, void **buffers){
     int i = 0;
     while(i < length){
         free(buffers[i]);
@@ -37,15 +38,17 @@ void closeAndFreeDirp(DIR *dirp){
 
 int readable(char *input_path){
     int length_of_buffer_array = 0;
-    char **buffer_array = calloc(10, sizeof(char**));
+    void **buffer_array = calloc(10, sizeof(void**));
     int access_return = 1;
+    int stat_return = 0;
     int readable_files = 0;
     DIR *dirp = NULL;
     struct dirent *my_dirent = NULL;
     errno = 0;
     char *file_path = NULL;
     char *new_file_path = NULL;
-    struct stat* stat_buf = NULL;
+    struct stat* stat_buf = malloc(sizeof(struct stat));
+    buffer_array[length_of_buffer_array++] = stat_buf;
 
     if(input_path == NULL){
         input_path = malloc(PATH_MAX);
@@ -69,18 +72,32 @@ int readable(char *input_path){
 
     printf("input_path is %s\n", input_path);
 
-    if(access_return = access(input_path, R_OK), 
-                 my_dirent = readdir(dirp), 
-                 my_dirent->d_type == DT_REG && access_return == 0
-                 && strcmp(my_dirent->d_name, "..") != 0
-                 && strcmp(my_dirent->d_name, ".") != 0){
-            
-            
+    stat_return = stat(input_path, stat_buf);
+    if(stat_return < 0){
+        fprintf (stderr, "%s: Can't get status of file with path %s --%s --errno=%d\n"
+                 ,"readable" , input_path, strerror(errno), errno);
+        deleteBuffers(length_of_buffer_array, buffer_array);
+        return(readable_files);
+    }
+
+    access_return = access(input_path, R_OK);
+    if(access_return < 0){
+        fprintf (stderr, "%s: Can't access file with path %s --%s --errno=%d\n"
+                 ,"readable" , input_path, strerror(errno), errno);
+        deleteBuffers(length_of_buffer_array, buffer_array);
+        return(readable_files);
+    }
+
+    if(S_ISREG(stat_buf->st_mode) 
+       && access_return == 0){
+        
+        deleteBuffers(length_of_buffer_array, buffer_array);
+        readable_files++;
+        return(readable_files); 
     }else if(access_return = access(input_path, X_OK), access_return < 0){
         fprintf (stderr, "%s: Can't access directory named %s --%s --errno=%d\n"
                  ,"readable" , input_path, strerror(errno), errno);
         deleteBuffers(length_of_buffer_array, buffer_array);
-        closeAndFreeDirp(dirp);
         return(readable_files);
     }else{
         dirp = opendir(input_path);
@@ -93,7 +110,7 @@ int readable(char *input_path){
         }
     }
 
-    while(my_dirent != NULL){
+    while(my_dirent = readdir(dirp), my_dirent != NULL){
         printf("my_dirent->d_name is %s\n", my_dirent->d_name);
         new_file_path = malloc(PATH_MAX);
 
